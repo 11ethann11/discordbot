@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Archive | Explorez l'Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-black: #000000;
+            --card-bg: #0a0a0a;
+            --border-color: #1f1f1f;
+            --accent-blue: #0070f3;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-black);
+            color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Effet de grille en arrière-plan */
+        .grid-bg {
+            background-image: 
+                linear-gradient(to right, #111 1px, transparent 1px),
+                linear-gradient(to bottom, #111 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(circle at center, black, transparent 80%);
+        }
+
+        .text-gradient {
+            background: linear-gradient(180deg, #fff 0%, #adadad 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card-vercel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-vercel:hover {
+            border-color: #444;
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .category-pill {
+            transition: all 0.2s;
+            border: 1px solid var(--border-color);
+        }
+
+        .category-pill.active {
+            background: white;
+            color: black;
+            border-color: white;
+        }
+
+        .glass-nav {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .btn-primary {
+            background: white;
+            color: black;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #e5e5e5;
+            transform: scale(1.02);
+        }
+
+        /* Animation d'entrée */
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reveal-item {
+            animation: reveal 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="selection:bg-blue-500/30">
+
+    <!-- Grid Background -->
+    <div class="fixed inset-0 grid-bg z-0 pointer-events-none"></div>
+
+    <!-- Navigation -->
+    <nav class="glass-nav fixed top-0 left-0 right-0 h-16 z-50 flex items-center justify-between px-6 md:px-12">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                <i class="fas fa-box-archive text-black text-xs"></i>
+            </div>
+            <span class="font-bold tracking-tighter text-xl">ARCHIVE</span>
+        </div>
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-400">
+            <a href="#" class="hover:text-white transition">Bibliothèque</a>
+            <a href="#" class="hover:text-white transition">À propos</a>
+            <a href="#" class="hover:text-white transition">API</a>
+        </div>
+        <button class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-xs font-bold transition">
+            Soumettre un Bot
+        </button>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-40 pb-20 px-6 text-center z-10">
+        <div class="reveal-item" style="animation-delay: 0.1s">
+            <span class="inline-block px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-6">
+                Accès Anticipé v2.0
+            </span>
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-6 text-gradient">
+                L'archive des <br class="hidden md:block"> intelligences.
+            </h1>
+            <p class="max-w-2xl mx-auto text-neutral-400 text-lg md:text-xl font-medium leading-relaxed mb-10">
+                Explorez une collection organisée des meilleurs bots et outils IA. 
+                Une interface épurée pour une puissance décuplée.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button class="btn-primary px-8 py-4 rounded-full font-bold text-sm w-full sm:w-auto">
+                    Explorer la liste
+                </button>
+                <div class="relative w-full sm:w-80">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500"></i>
+                    <input type="text" placeholder="Rechercher un outil..." 
+                        class="w-full bg-[#111] border border-[#222] rounded-full py-4 pl-12 pr-6 text-sm outline-none focus:border-neutral-500 transition">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filter Section -->
+    <section class="relative z-10 px-6 max-w-7xl mx-auto mb-12 overflow-x-auto">
+        <div class="flex items-center gap-3 pb-4 scrollbar-hide">
+            <button class="category-pill active px-6 py-2 rounded-full text-xs font-bold whitespace-nowrap">Tous</button>
+            <button class="category-pill px-6 py-2 rounded-full text-xs font-bold whitespace-nowrap text-neutral-400 hover:text-white">Modération</button>
+            <button class="category-pill px-6 py-2 rounded-full text-xs font-bold whitespace-nowrap text-neutral-400 hover:text-white">Utilitaire</button>
+            <button class="category-pill px-6 py-2 rounded-full text-xs font-bold whitespace-nowrap text-neutral-400 hover:text-white">Musique</button>
+            <button class="category-pill px-6 py-2 rounded-full text-xs font-bold whitespace-nowrap text-neutral-400 hover:text-white">Divertissement</button>
+        </div>
+    </section>
+
+    <!-- Bots Grid -->
+    <section class="relative z-10 px-6 max-w-7xl mx-auto pb-40">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- Bot Card Example 1 -->
+            <div class="card-vercel p-6 rounded-[2rem] flex flex-col justify-between h-64 reveal-item" style="animation-delay: 0.2s">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-xl">
+                            <i class="fas fa-shield-cat text-black text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-black text-blue-500 uppercase tracking-tighter bg-blue-500/10 px-2 py-1 rounded">Moderation</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Sentinel Core</h3>
+                    <p class="text-neutral-500 text-sm line-clamp-2">Protection avancée contre le spam et gestion de communauté automatisée.</p>
+                </div>
+                <div class="flex items-center justify-between pt-4">
+                    <span class="text-[10px] font-bold text-neutral-600">v4.2.0</span>
+                    <button class="w-10 h-10 rounded-full bg-[#111] border border-[#222] flex items-center justify-center hover:bg-white hover:text-black transition">
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bot Card Example 2 -->
+            <div class="card-vercel p-6 rounded-[2rem] flex flex-col justify-between h-64 reveal-item" style="animation-delay: 0.3s">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-[#111] border border-[#222] flex items-center justify-center">
+                            <i class="fas fa-music text-white text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-black text-neutral-400 uppercase tracking-tighter bg-white/5 px-2 py-1 rounded">Musique</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Melodia Pro</h3>
+                    <p class="text-neutral-500 text-sm line-clamp-2">Streaming audio haute fidélité sans latence pour vos salons vocaux.</p>
+                </div>
+                <div class="flex items-center justify-between pt-4">
+                    <span class="text-[10px] font-bold text-neutral-600">v2.1.5</span>
+                    <button class="w-10 h-10 rounded-full bg-[#111] border border-[#222] flex items-center justify-center hover:bg-white hover:text-black transition">
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bot Card Example 3 -->
+            <div class="card-vercel p-6 rounded-[2rem] flex flex-col justify-between h-64 reveal-item" style="animation-delay: 0.4s">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-12 h-12 rounded-2xl bg-[#111] border border-[#222] flex items-center justify-center">
+                            <i class="fas fa-bolt text-white text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-black text-neutral-400 uppercase tracking-tighter bg-white/5 px-2 py-1 rounded">Utilitaire</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Spark Engine</h3>
+                    <p class="text-neutral-500 text-sm line-clamp-2">Automatisez vos tâches répétitives avec des macros puissantes.</p>
+                </div>
+                <div class="flex items-center justify-between pt-4">
+                    <span class="text-[10px] font-bold text-neutral-600">v1.0.0</span>
+                    <button class="w-10 h-10 rounded-full bg-[#111] border border-[#222] flex items-center justify-center hover:bg-white hover:text-black transition">
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer Mobile Nav (Style App) -->
+    <div class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] h-16 glass-nav rounded-2xl z-50 flex items-center justify-around px-2 border border-white/5 shadow-2xl">
+        <a href="#" class="flex flex-col items-center justify-center w-12 h-12 text-white">
+            <i class="fas fa-house text-lg"></i>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-12 h-12 text-neutral-500">
+            <i class="fas fa-magnifying-glass text-lg"></i>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center w-12 h-12 text-neutral-500">
+            <i class="fas fa-plus-circle text-lg"></i>
+        </a>
+    </div>
+
+    <script>
+        // Gestion des filtres
+        const pills = document.querySelectorAll('.category-pill');
+        pills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                pills.forEach(p => p.classList.remove('active', 'text-black'));
+                pills.forEach(p => p.classList.add('text-neutral-400'));
+                pill.classList.add('active');
+                pill.classList.remove('text-neutral-400');
+                if(pill.classList.contains('active')) pill.classList.add('text-black');
+            });
+        });
+    </script>
+</body>
+</html>
+
