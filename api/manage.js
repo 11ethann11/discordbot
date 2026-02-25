@@ -1,6 +1,5 @@
 import Redis from 'ioredis';
 
-// Initialisation du client Redis avec la variable de ta capture d'écran
 const redis = new Redis(process.env.REDIS_URL);
 
 export default async function handler(req, res) {
@@ -18,8 +17,6 @@ export default async function handler(req, res) {
         if (method === 'GET') {
             const type = req.query.type;
             const key = type === 'pending' ? SUGGEST_KEY : BOTS_KEY;
-            
-            // ioredis utilise get/set mais demande un JSON.parse car il stocke des strings
             const data = await redis.get(key);
             return res.status(200).json(data ? JSON.parse(data) : []);
         }
@@ -27,16 +24,15 @@ export default async function handler(req, res) {
         if (method === 'POST') {
             const { action, data, password } = req.body;
 
+            // Une simple vérification de mot de passe (à adapter selon tes besoins)
+            // if (action !== 'suggest' && password !== "TON_PASSWORD") return res.status(403).json({error: 'Interdit'});
+
             if (action === 'suggest') {
                 const currentStr = await redis.get(SUGGEST_KEY);
                 const current = currentStr ? JSON.parse(currentStr) : [];
                 current.push({ ...data, id: Date.now() });
                 await redis.set(SUGGEST_KEY, JSON.stringify(current));
                 return res.status(200).json({ success: true });
-            }
-
-            if (password !== 'admin123') {
-                return res.status(401).json({ error: 'Invalide' });
             }
 
             if (action === 'approve') {
@@ -70,9 +66,21 @@ export default async function handler(req, res) {
                 await redis.set(BOTS_KEY, JSON.stringify(approved));
                 return res.status(200).json({ success: true });
             }
+
+            // --- NOUVELLE ACTION : UPDATE ---
+            if (action === 'update') {
+                const approvedStr = await redis.get(BOTS_KEY);
+                let approved = approvedStr ? JSON.parse(approvedStr) : [];
+                const index = approved.findIndex(b => b.id === data.id);
+                if (index !== -1) {
+                    approved[index] = { ...approved[index], ...data };
+                    await redis.set(BOTS_KEY, JSON.stringify(approved));
+                    return res.status(200).json({ success: true });
+                }
+                return res.status(404).json({ error: 'Bot non trouvé' });
+            }
         }
     } catch (err) {
-        console.error("Erreur Redis:", err);
         return res.status(500).json({ error: err.message });
     }
 }
