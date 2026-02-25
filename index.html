@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Archive | Explorez l'Intelligence</title>
+    
+    <!-- Scripts React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-black: #000000;
+            --card-bg: #0a0a0a;
+            --border-color: #1f1f1f;
+            --accent-blue: #0070f3;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-black);
+            color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .grid-bg {
+            background-image: 
+                linear-gradient(to right, #111 1px, transparent 1px),
+                linear-gradient(to bottom, #111 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(circle at center, black, transparent 80%);
+        }
+
+        .text-gradient {
+            background: linear-gradient(180deg, #fff 0%, #adadad 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card-vercel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-vercel:hover {
+            border-color: #444;
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .category-pill {
+            transition: all 0.2s;
+            border: 1px solid var(--border-color);
+        }
+
+        .category-pill.active {
+            background: white !important;
+            color: black !important;
+            border-color: white !important;
+        }
+
+        .glass-nav {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .btn-primary {
+            background: white;
+            color: black;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #e5e5e5;
+            transform: scale(1.02);
+        }
+
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reveal-item {
+            animation: reveal 0.6s ease-out forwards;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="selection:bg-blue-500/30">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const App = () => {
+            const [view, setView] = useState('home'); // 'home' | 'suggest'
+            const [bots, setBots] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [activeCategory, setActiveCategory] = useState('Tous');
+
+            const categories = ['Tous', 'Modération', 'Utilitaire', 'Musique', 'Divertissement'];
+
+            // Fetch les bots approuvés depuis Redis via ton API
+            const fetchBots = async () => {
+                setLoading(true);
+                try {
+                    const res = await fetch('/api/manage?type=approved');
+                    const data = await res.json();
+                    setBots(Array.isArray(data) ? data : []);
+                } catch (err) {
+                    console.error("Erreur de récupération Redis:", err);
+                }
+                setLoading(false);
+            };
+
+            useEffect(() => {
+                fetchBots();
+            }, []);
+
+            // Filtrage des bots
+            const filteredBots = useMemo(() => {
+                return bots.filter(bot => {
+                    const matchesSearch = bot.name?.toLowerCase().includes(searchQuery.toLowerCase());
+                    const matchesCat = activeCategory === 'Tous' || bot.category === activeCategory;
+                    return matchesSearch && matchesCat;
+                });
+            }, [bots, searchQuery, activeCategory]);
+
+            // Envoi d'une suggestion à Redis
+            const handleSuggest = async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const botData = Object.fromEntries(formData.entries());
+
+                try {
+                    const res = await fetch('/api/manage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'suggest', data: botData })
+                    });
+                    if (res.ok) {
+                        alert("Bot suggéré avec succès !");
+                        setView('home');
+                    }
+                } catch (err) {
+                    alert("Erreur lors de l'envoi.");
+                }
+            };
+
+            return (
+                <div className="relative min-h-screen">
+                    {/* Grid Background */}
+                    <div className="fixed inset-0 grid-bg z-0 pointer-events-none"></div>
+
+                    {/* Navigation */}
+                    <nav className="glass-nav fixed top-0 left-0 right-0 h-16 z-50 flex items-center justify-between px-6 md:px-12">
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('home')}>
+                            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                                <i className="fas fa-box-archive text-black text-xs"></i>
+                            </div>
+                            <span className="font-bold tracking-tighter text-xl">ARCHIVE</span>
+                        </div>
+                        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-400">
+                            <button onClick={() => setView('home')} className="hover:text-white transition">Bibliothèque</button>
+                            <a href="/admin.html" className="hover:text-white transition uppercase text-[10px] tracking-widest bg-white/5 px-3 py-1 rounded-md">Admin</a>
+                        </div>
+                        <button 
+                            onClick={() => setView('suggest')}
+                            className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-xs font-bold transition"
+                        >
+                            Soumettre un Bot
+                        </button>
+                    </nav>
+
+                    {view === 'home' ? (
+                        <div className="relative z-10 pt-40">
+                            {/* Hero Section */}
+                            <section className="px-6 text-center mb-20">
+                                <div className="reveal-item">
+                                    <span className="inline-block px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-6">
+                                        Accès Anticipé v2.0
+                                    </span>
+                                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter mb-6 text-gradient">
+                                        L'archive des <br className="hidden md:block" /> intelligences.
+                                    </h1>
+                                    <p className="max-w-2xl mx-auto text-neutral-400 text-lg md:text-xl font-medium leading-relaxed mb-10">
+                                        Explorez les bots approuvés par notre équipe. 
+                                        Données synchronisées en temps réel via Redis.
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                        <div className="relative w-full sm:w-96">
+                                            <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500"></i>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Rechercher un outil..." 
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full bg-[#111] border border-[#222] rounded-full py-4 pl-12 pr-6 text-sm outline-none focus:border-neutral-500 transition"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Filter Section */}
+                            <section className="px-6 max-w-7xl mx-auto mb-12 overflow-x-auto no-scrollbar">
+                                <div className="flex items-center gap-3 pb-4">
+                                    {categories.map(cat => (
+                                        <button 
+                                            key={cat}
+                                            onClick={() => setActiveCategory(cat)}
+                                            className={`category-pill px-6 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat ? 'active' : 'text-neutral-400 hover:text-white'}`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* Bots Grid */}
+                            <section className="px-6 max-w-7xl mx-auto pb-40">
+                                {loading ? (
+                                    <div className="text-center py-20 text-neutral-500 font-bold animate-pulse">
+                                        CHARGEMENT REDIS...
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {filteredBots.map((bot, index) => (
+                                            <div 
+                                                key={bot.id || index} 
+                                                className="card-vercel p-6 rounded-[2rem] flex flex-col justify-between h-64 reveal-item" 
+                                                style={{ animationDelay: `${0.1 * index}s` }}
+                                            >
+                                                <div>
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div className="w-12 h-12 rounded-2xl bg-[#111] border border-[#222] flex items-center justify-center shadow-xl">
+                                                            <i className={`fas ${bot.category === 'Musique' ? 'fa-music' : bot.category === 'Modération' ? 'fa-shield-halved' : 'fa-bolt'} text-white text-xl`}></i>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-tighter bg-blue-500/10 px-2 py-1 rounded">
+                                                            {bot.category}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="text-xl font-bold mb-2">{bot.name}</h3>
+                                                    <p className="text-neutral-500 text-sm line-clamp-2">{bot.desc}</p>
+                                                </div>
+                                                <div className="flex items-center justify-between pt-4">
+                                                    <span className="text-[10px] font-bold text-neutral-600">REDIS_SYNC</span>
+                                                    <a 
+                                                        href={bot.url} 
+                                                        target="_blank"
+                                                        className="w-10 h-10 rounded-full bg-[#111] border border-[#222] flex items-center justify-center hover:bg-white hover:text-black transition"
+                                                    >
+                                                        <i className="fas fa-arrow-right text-xs"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
+                        </div>
+                    ) : (
+                        /* Section Suggestion */
+                        <div className="relative z-10 pt-40 px-6 max-w-xl mx-auto">
+                            <div className="reveal-item">
+                                <h2 className="text-4xl font-black mb-8 italic">Soumettre un Bot</h2>
+                                <form onSubmit={handleSuggest} className="space-y-4">
+                                    <input name="name" placeholder="Nom du bot" required className="w-full bg-[#0a0a0a] border border-[#1f1f1f] p-5 rounded-2xl outline-none focus:border-white transition" />
+                                    <input name="url" type="url" placeholder="Lien d'invitation" required className="w-full bg-[#0a0a0a] border border-[#1f1f1f] p-5 rounded-2xl outline-none focus:border-white transition" />
+                                    <select name="category" className="w-full bg-[#0a0a0a] border border-[#1f1f1f] p-5 rounded-2xl outline-none appearance-none text-neutral-400">
+                                        <option>Modération</option>
+                                        <option>Musique</option>
+                                        <option>Utilitaire</option>
+                                        <option>Divertissement</option>
+                                    </select>
+                                    <textarea name="desc" placeholder="Description courte" required className="w-full bg-[#0a0a0a] border border-[#1f1f1f] p-5 rounded-2xl outline-none h-32 resize-none focus:border-white transition"></textarea>
+                                    <div className="flex gap-4">
+                                        <button type="button" onClick={() => setView('home')} className="flex-1 bg-white/5 text-white py-4 rounded-2xl font-bold">Annuler</button>
+                                        <button type="submit" className="flex-[2] btn-primary py-4 rounded-2xl font-black text-sm uppercase">Envoyer au Panel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer Mobile Nav */}
+                    <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] h-16 glass-nav rounded-2xl z-50 flex items-center justify-around px-2 border border-white/5 shadow-2xl">
+                        <button onClick={() => setView('home')} className={`flex flex-col items-center justify-center w-12 h-12 ${view === 'home' ? 'text-white' : 'text-neutral-500'}`}>
+                            <i className="fas fa-house text-lg"></i>
+                        </button>
+                        <button onClick={() => setView('home')} className="flex flex-col items-center justify-center w-12 h-12 text-neutral-500">
+                            <i className="fas fa-magnifying-glass text-lg"></i>
+                        </button>
+                        <button onClick={() => setView('suggest')} className={`flex flex-col items-center justify-center w-12 h-12 ${view === 'suggest' ? 'text-white' : 'text-neutral-500'}`}>
+                            <i className="fas fa-plus-circle text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
