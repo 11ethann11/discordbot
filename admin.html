@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin HQ | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #020408; color: #cbd5e1; font-family: sans-serif; }
+        .admin-card { background: #0b0e14; border: 1px solid rgba(255,255,255,0.05); }
+        input, select, textarea { background: #05070a !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Auth -->
+    <div id="login" class="fixed inset-0 bg-black z-50 flex items-center justify-center p-6">
+        <div class="max-w-md w-full text-center">
+            <h1 class="text-3xl font-black text-white mb-8">ADMIN HQ</h1>
+            <input type="password" id="pass" placeholder="Mot de passe" class="w-full p-4 rounded-2xl mb-4 text-center">
+            <button onclick="tryLogin()" class="w-full bg-indigo-600 py-4 rounded-2xl font-bold">Connexion</button>
+        </div>
+    </div>
+
+    <!-- Interface -->
+    <div id="ui" class="hidden">
+        <nav class="p-6 border-b border-white/5 flex justify-between items-center">
+            <span class="font-black text-indigo-500">SYSTEM CONTROL</span>
+            <div class="flex gap-4">
+                <button onclick="importFromGithub()" class="bg-indigo-600/20 text-indigo-400 px-4 py-2 rounded-lg text-xs font-bold border border-indigo-500/20">
+                    <i class="fas fa-cloud-download-alt mr-2"></i>IMPORT AUTO GITHUB
+                </button>
+                <button onclick="location.reload()" class="text-slate-500">Déconnexion</button>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Colonne 1 : Suggestions -->
+            <div class="admin-card p-6 rounded-3xl lg:col-span-2">
+                <h2 class="text-xl font-bold mb-6 flex justify-between">
+                    Suggestions <span id="s-count" class="text-slate-500 text-sm">0</span>
+                </h2>
+                <div id="s-list" class="space-y-4"></div>
+            </div>
+
+            <!-- Colonne 2 : Stats & Ajout -->
+            <div class="space-y-6">
+                <div class="admin-card p-6 rounded-3xl">
+                    <h2 class="text-xl font-bold mb-4">Direct Add</h2>
+                    <form id="addForm" class="space-y-3">
+                        <input type="text" id="an" placeholder="Nom" required class="w-full p-3 rounded-xl text-sm">
+                        <input type="url" id="au" placeholder="GitHub URL" required class="w-full p-3 rounded-xl text-sm">
+                        <select id="ac" class="w-full p-3 rounded-xl text-sm">
+                            <option>Modération</option><option>Musique</option><option>Fun</option>
+                        </select>
+                        <textarea id="ad" placeholder="Description" required class="w-full p-3 rounded-xl h-20 text-sm"></textarea>
+                        <button class="w-full bg-indigo-600 py-3 rounded-xl font-bold text-sm">Publier</button>
+                    </form>
+                </div>
+                
+                <div class="admin-card p-6 rounded-3xl">
+                    <h2 class="text-xl font-bold mb-4">En ligne</h2>
+                    <div id="p-list" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let secret = "";
+
+        async function tryLogin() {
+            secret = document.getElementById('pass').value;
+            const res = await fetch('/api/manage?type=approved');
+            if(res.ok) {
+                document.getElementById('login').remove();
+                document.getElementById('ui').classList.remove('hidden');
+                load();
+            } else { alert("Nop."); }
+        }
+
+        async function load() {
+            const pending = await (await fetch('/api/manage?type=pending')).json();
+            const approved = await (await fetch('/api/manage?type=approved')).json();
+
+            document.getElementById('s-count').innerText = pending.length;
+            document.getElementById('s-list').innerHTML = pending.map(b => `
+                <div class="bg-black/40 p-5 rounded-2xl border border-white/5 flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-white">${b.name}</div>
+                        <div class="text-xs text-slate-500 mb-2">${b.url}</div>
+                        <div class="text-sm text-slate-400">${b.desc}</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="approve(${b.id})" class="size-10 bg-green-500/10 text-green-500 rounded-xl hover:bg-green-500 hover:text-white transition"><i class="fas fa-check"></i></button>
+                        <button onclick="api('delete_suggest', {id:${b.id}})" class="size-10 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+            `).join('') || "Aucune suggestion en attente.";
+
+            document.getElementById('p-list').innerHTML = approved.map(b => `
+                <div class="flex justify-between items-center p-3 bg-black/20 rounded-xl text-sm">
+                    <span class="truncate pr-4">${b.name}</span>
+                    <button onclick="del(${b.id})" class="text-red-500 hover:text-white transition"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        async function api(action, data) {
+            await fetch('/api/manage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, data, password: secret })
+            });
+            load();
+        }
+
+        async function approve(id) {
+            const cat = prompt("Catégorie ? (Modération, Musique, Fun, Utilitaire)", "Général");
+            await api('approve', { id, category: cat });
+        }
+
+        async function del(id) { if(confirm("Supprimer ?")) await api('delete', { id }); }
+
+        // Système d'importation de masse
+        async function importFromGithub() {
+            const query = prompt("Recherche GitHub (ex: discord-bot language:javascript)", "discord-bot");
+            if(!query) return;
+
+            const res = await fetch(`https://api.github.com/search/repositories?q=${query}&sort=stars&order=desc&per_page=30`);
+            const json = await res.json();
+            
+            const bots = json.items.map(repo => ({
+                id: repo.id,
+                name: repo.name,
+                url: repo.html_url,
+                desc: repo.description || "Aucune description fournie.",
+                category: "Utilitaire",
+                stars: repo.stargazers_count
+            }));
+
+            if(confirm(`Importer ${bots.length} bots depuis GitHub ?`)) {
+                await api('bulk_import', bots);
+                alert("Importation réussie !");
+            }
+        }
+
+        document.getElementById('addForm').onsubmit = (e) => {
+            e.preventDefault();
+            api('add_direct', {
+                name: document.getElementById('an').value,
+                url: document.getElementById('au').value,
+                category: document.getElementById('ac').value,
+                desc: document.getElementById('ad').value
+            });
+            e.target.reset();
+        };
+    </script>
+</body>
+</html>
+
