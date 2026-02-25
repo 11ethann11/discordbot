@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Bulk Import & Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #020408; color: #e2e8f0; font-family: sans-serif; }
+        .glass { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.05); }
+        input, select, textarea { background: #000 !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; }
+    </style>
+</head>
+<body class="min-h-screen p-4">
+
+    <!-- Login -->
+    <div id="login-box" class="max-w-md mx-auto mt-20 p-8 glass rounded-3xl text-center">
+        <h1 class="text-2xl font-bold mb-6 text-indigo-400">Admin Login</h1>
+        <input type="password" id="pass" placeholder="Mot de passe" class="w-full p-4 rounded-xl mb-4 text-center">
+        <button onclick="login()" class="w-full bg-indigo-600 py-4 rounded-xl font-bold">Entrer</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden max-w-6xl mx-auto space-y-6 pt-10">
+        <div class="flex justify-between items-center bg-indigo-600 p-6 rounded-3xl shadow-xl">
+            <h1 class="text-2xl font-black">PANEL DE GESTION CLOUD</h1>
+            <button onclick="location.reload()" class="bg-black/20 px-4 py-2 rounded-lg text-sm">Déconnexion</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Colonne Gauche: Importation Massive -->
+            <div class="glass p-6 rounded-3xl">
+                <h2 class="text-xl font-bold mb-4 text-green-400"><i class="fas fa-file-import mr-2"></i>Importation Massive (JSON)</h2>
+                <p class="text-xs text-slate-500 mb-4">Colle un tableau JSON d'objets [{name, url, desc, category}]</p>
+                <textarea id="bulkJson" placeholder='[{"name":"Bot1", "url":"...", "desc":"...", "category":"Musique"}]' class="w-full h-64 p-4 rounded-xl mb-4 text-xs font-mono"></textarea>
+                <button onclick="bulkImport()" id="bulkBtn" class="w-full bg-green-600 py-3 rounded-xl font-bold hover:bg-green-500 transition">Importer la liste</button>
+            </div>
+
+            <!-- Colonne Droite: Gestion -->
+            <div class="space-y-6">
+                <!-- Suggestions -->
+                <div class="glass p-6 rounded-3xl">
+                    <h2 class="text-xl font-bold mb-4 text-yellow-500">Suggestions en attente</h2>
+                    <div id="pending-list" class="space-y-3"></div>
+                </div>
+                <!-- Liste Active -->
+                <div class="glass p-6 rounded-3xl">
+                    <h2 class="text-xl font-bold mb-4 text-white">Bots en ligne</h2>
+                    <div id="active-list" class="max-h-80 overflow-y-auto space-y-2 pr-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminPass = "";
+
+        async function api(action, data = {}) {
+            const res = await fetch('/api/manage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, data, password: adminPass })
+            });
+            return res.json();
+        }
+
+        async function login() {
+            adminPass = document.getElementById('pass').value;
+            const res = await fetch('/api/manage?type=approved');
+            if (res.ok) {
+                document.getElementById('login-box').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                refresh();
+            } else { alert("Mot de passe incorrect"); }
+        }
+
+        async function refresh() {
+            const pending = await (await fetch('/api/manage?type=pending')).json();
+            const approved = await (await fetch('/api/manage?type=approved')).json();
+
+            document.getElementById('pending-list').innerHTML = pending.length ? pending.map(b => `
+                <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                    <div class="text-sm">
+                        <div class="font-bold text-indigo-400">${b.name}</div>
+                        <div class="text-xs text-slate-500">${b.category}</div>
+                    </div>
+                    <button onclick="approve(${b.id})" class="bg-green-600 px-3 py-1 rounded-lg text-xs font-bold">OK</button>
+                </div>
+            `).join('') : "<p class='text-slate-600 italic text-sm text-center'>Aucune suggestion</p>";
+
+            document.getElementById('active-list').innerHTML = approved.map(b => `
+                <div class="bg-black/20 p-3 rounded-xl flex justify-between items-center text-sm border border-white/5">
+                    <span>${b.name} <span class="text-[10px] text-slate-600 ml-2">${b.category || 'N/A'}</span></span>
+                    <button onclick="del('${b.name}')" class="text-red-500 hover:text-white"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        async function approve(id) { await api('approve', { id }); refresh(); }
+        async function del(name) { if(confirm('Supprimer définitivement ?')) { await api('delete', { name }); refresh(); } }
+
+        async function bulkImport() {
+            const area = document.getElementById('bulkJson');
+            const btn = document.getElementById('bulkBtn');
+            try {
+                const dataArray = JSON.parse(area.value);
+                if(!Array.isArray(dataArray)) throw new Error("Doit être un tableau []");
+                
+                btn.disabled = true;
+                btn.innerHTML = "Importation...";
+
+                for(const item of dataArray) {
+                    await api('add_direct', item);
+                }
+
+                alert("Importation de " + dataArray.length + " bots réussie !");
+                area.value = "";
+                refresh();
+            } catch(e) {
+                alert("Erreur format JSON: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = "Importer la liste";
+            }
+        }
+    </script>
+</body>
+</html>
+
